@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MakerShot — FBA Inventory Outages</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --ink: #1a1d21; --muted: #6b7280;
+    --line: #e5e7eb; --red: #b91c1c; --red-bg: #fef2f2; --amber: #b45309;
+    --accent: #1f2937;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.45 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+         background: var(--bg); color: var(--ink); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 24px 20px 60px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin-bottom: 20px; }
+  .stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+          padding: 12px 18px; min-width: 140px; }
+  .stat .n { font-size: 24px; font-weight: 700; }
+  .stat .n.bad { color: var(--red); }
+  .stat .l { color: var(--muted); font-size: 12px; }
+  .trend { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+           padding: 12px 18px; flex: 1 1 260px; }
+  .trend svg { display: block; width: 100%; height: 48px; }
+  .controls { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; }
+  input[type=search] { padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px;
+                       width: 280px; font-size: 14px; background: var(--card); }
+  button.ctrl { padding: 7px 12px; border: 1px solid var(--line); background: var(--card);
+                border-radius: 8px; cursor: pointer; font-size: 13px; }
+  button.ctrl:hover { background: #f0f1f3; }
+  details.master { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+                   margin-bottom: 8px; overflow: hidden; }
+  details.master[open] { border-color: #cbd5e1; }
+  summary { list-style: none; cursor: pointer; padding: 12px 16px; display: flex;
+            align-items: center; gap: 12px; }
+  summary::-webkit-details-marker { display: none; }
+  summary .chev { color: var(--muted); font-size: 11px; transition: transform .15s; width: 12px; }
+  details[open] summary .chev { transform: rotate(90deg); }
+  .msku { font-weight: 700; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+          font-size: 14px; min-width: 110px; }
+  .mname { flex: 1; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fam { color: var(--muted); font-size: 12px; }
+  .pill { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
+  .pill.out { background: var(--red-bg); color: var(--red); }
+  .pill.fbj { background: #fffbeb; color: var(--amber); }
+  .pill.po { background: #f3f4f6; color: var(--muted); }
+  .pill.count { background: #eef2ff; color: #3730a3; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; color: var(--muted); font-weight: 600; font-size: 11px;
+       text-transform: uppercase; letter-spacing: .03em; padding: 6px 16px; border-top: 1px solid var(--line); }
+  td { padding: 7px 16px; border-top: 1px solid var(--line); vertical-align: top; }
+  td.sku, td.ff { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; white-space: nowrap; }
+  td.title { color: #374151; }
+  .asin a { color: #2563eb; text-decoration: none; }
+  .asin a:hover { text-decoration: underline; }
+  .since { white-space: nowrap; color: var(--amber); font-weight: 600; }
+  .none { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+          padding: 32px; text-align: center; color: var(--muted); }
+  .foot { color: var(--muted); font-size: 12px; margin-top: 24px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>FBA Inventory Outages</h1>
+  <div class="sub" id="sub"></div>
+  <div class="stats" id="stats"></div>
+  <div class="controls">
+    <input type="search" id="q" placeholder="Filter by SKU, title, ASIN&hellip;">
+    <button class="ctrl" onclick="setAll(true)">Expand all</button>
+    <button class="ctrl" onclick="setAll(false)">Collapse all</button>
+    <span id="matchinfo" style="color:var(--muted);font-size:12px"></span>
+  </div>
+  <div id="list"></div>
+  <h2 id="fbjhead" style="font-size:16px;margin:28px 0 4px">Fulfilled by Joey — live listings with no FBA presence</h2>
+  <div class="sub" style="margin-bottom:12px">No FBA record exists for the listing SKU, its routed fulfillment SKU, or its Master —
+    these ship from non-FBA inventory, not an FBA stockout.</div>
+  <div id="fbjlist"></div>
+  <div class="foot">
+    Outage = routed fulfillment SKU has 0 FBA available AND Master SKU fallback has 0 available
+    (audit check #33 logic). &ldquo;Out since&rdquo; is based on daily FBA snapshots; &ldquo;&ge;&rdquo; means
+    already out at the earliest snapshot on file. Master-placeholder listing rows (e.g. LDK, LDI)
+    are suppressed &mdash; the Master appears only as the group parent. M-suffix FBM duplicates
+    are collapsed into their non-M base SKU. Regenerate:
+    <code>python3 scripts/build_outage_dashboard.py</code>
+  </div>
+</div>
+<script>
+const DATA = {"generated": "2026-08-05", "snapshot": "2026-08-04", "first_snapshot": "2026-06-29", "snapshots": ["2026-06-29", "2026-06-30", "2026-07-01", "2026-07-02", "2026-07-04", "2026-07-07", "2026-07-09", "2026-07-11", "2026-07-13", "2026-07-15", "2026-07-17", "2026-07-18", "2026-07-20", "2026-07-22", "2026-07-23", "2026-07-24", "2026-07-25", "2026-07-27", "2026-07-28", "2026-07-29", "2026-07-30", "2026-07-31", "2026-08-01", "2026-08-03", "2026-08-04"], "trend": [["2026-06-29", 16], ["2026-06-30", 16], ["2026-07-01", 16], ["2026-07-02", 16], ["2026-07-04", 49], ["2026-07-07", 49], ["2026-07-09", 49], ["2026-07-11", 49], ["2026-07-13", 49], ["2026-07-15", 16], ["2026-07-17", 16], ["2026-07-18", 16], ["2026-07-20", 16], ["2026-07-22", 16], ["2026-07-23", 17], ["2026-07-24", 17], ["2026-07-25", 17], ["2026-07-27", 17], ["2026-07-28", 17], ["2026-07-29", 18], ["2026-07-30", 18], ["2026-07-31", 18], ["2026-08-01", 18], ["2026-08-03", 18], ["2026-08-04", 18]], "active_listings": 368, "active_masters": 153, "excluded_bundles": 32, "excluded_bundle_listings": 34, "excluded_phaseout_listings": 9, "excluded_phaseout_masters": 10, "groups": [{"master": "LDGDN", "name": "MakerShot Loader Glock Double 9", "family": "Speedloaders Master", "master_avail": 0, "listings": [{"sku": "LDRRXM9B", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Ruger Pistol Magazines", "asin": "B0DZZLX15C", "ff": "LDGDN", "since": "2026-06-29", "since_first_snap": true}], "since": "2026-06-29", "since_first_snap": true}, {"master": "LDI", "name": "Loader I", "family": "Speedloaders Master", "master_avail": 0, "listings": [{"sku": "LDBC45B", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Beretta Pistol Magazines", "asin": "B08BL9CTQX", "ff": "LDI", "since": "2026-06-29", "since_first_snap": true}, {"sku": "LDBPX445B", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Beretta Pistol Magazines", "asin": "B07B4TGYP4", "ff": "LDI", "since": "2026-06-29", "since_first_snap": true}, {"sku": "LDEAAW45B", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for EAA Pistol Magazines", "asin": "B08BLB7P5K", "ff": "LDI", "since": "2026-06-29", "since_first_snap": true}, {"sku": "LDRSR45B", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Ruger Pistol Magazines", "asin": "B07B4TSQTN", "ff": "LDI", "since": "2026-06-29", "since_first_snap": true}, {"sku": "LDSC45B", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Stoeger Pistol Magazines", "asin": "B07B4T8LTV", "ff": "LDI", "since": "2026-06-29", "since_first_snap": true}, {"sku": "LDSWMP10B", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Smith & Wesson Pistol Magazines", "asin": "B0FCHMRJNV", "ff": "LDI", "since": "2026-06-29", "since_first_snap": true}], "since": "2026-06-29", "since_first_snap": true}, {"master": "LDM", "name": "Loader M", "family": "Speedloaders Master", "master_avail": 0, "listings": [{"sku": "LDG20B", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Glock Pistol Magazines", "asin": "B08BL9HWBF", "ff": "LDM", "since": "2026-06-29", "since_first_snap": true}, {"sku": "LDG21B", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Glock Pistol Magazines", "asin": "B01M7WZ8JV", "ff": "LDM", "since": "2026-06-29", "since_first_snap": true}, {"sku": "LDG30B", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Glock Pistol Magazines", "asin": "B01M7440LR", "ff": "LDM", "since": "2026-06-29", "since_first_snap": true}], "since": "2026-06-29", "since_first_snap": true}, {"master": "LDSTE", "name": "LDSTE: Long Double Stack .380", "family": "Speedloaders Master", "master_avail": 0, "listings": [{"sku": "LDSSP365380B", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Sig Sauer Pistol Magazines", "asin": "B0CQC2Q8CP", "ff": "LDSTE", "since": "2026-06-29", "since_first_snap": true}], "since": "2026-06-29", "since_first_snap": true}, {"master": "LDTDS", "name": "Loader Generic LDTDS", "family": "Speedloaders Master", "master_avail": 0, "listings": [{"sku": "LDSWB2380B", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Smith & Wesson Pistol Magazines", "asin": "B0DZDXX64B", "ff": "LDTDS", "since": "2026-06-29", "since_first_snap": true}], "since": "2026-06-29", "since_first_snap": true}, {"master": "LDZ", "name": "Loader Z", "family": "Speedloaders", "master_avail": 0, "listings": [{"sku": "LDFN57B", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for FN Herstal Pistol Magazines", "asin": "B01MT0Z63I", "ff": "LDZ", "since": "2026-06-29", "since_first_snap": true}], "since": "2026-06-29", "since_first_snap": true}, {"master": "RTL35751a", "name": "MAKERSHOT .38 Special / .357 Magnum Revolver Range Loading Block, 5 shot - Type 1a", "family": "Range Tools", "master_avail": 0, "listings": [{"sku": "RTL35751a", "marketplace": "Amazon US", "title": "MakerShot Revolver Range Loading Block", "asin": "B09PFFGT7D", "ff": "RTL35751a", "since": "2026-06-29", "since_first_snap": true}], "since": "2026-06-29", "since_first_snap": true}, {"master": "RUGER-LDR57100", "name": "Magazine Speed Loader, Ruger Co-Branded, Compatible with Ruger 57 - 100 Unit Packs", "family": "", "master_avail": 0, "listings": [{"sku": "RUGER-LDR57100", "marketplace": "Amazon US", "title": "MakerShot RUGER-LDR57100", "asin": "B0FGMYFVGC", "ff": "RUGER-LDR57100", "since": "2026-06-29", "since_first_snap": true}], "since": "2026-06-29", "since_first_snap": true}, {"master": "SPCJ02B", "name": "Slide Plate for Sig Sauer P320, Skull", "family": "Slide Plates", "master_avail": 0, "listings": [{"sku": "SPCJ02B", "marketplace": "Amazon US", "title": "MakerShot 3D Aluminum Slide Cover Plate", "asin": "B08KPD5B1M", "ff": "SPCJ02B", "since": "2026-06-29", "since_first_snap": true}], "since": "2026-06-29", "since_first_snap": true}, {"master": "RTL35762b", "name": "MakerShot .38 Special / .357 Magnum Revolver Range Loading Tray w/ Lid, 6 shot (version B2)", "family": "Range Tools", "master_avail": 0, "listings": [{"sku": "RTL35762b", "marketplace": "Amazon US", "title": "MakerShot Revolver Range Loading Block", "asin": "B08PNRC8R9", "ff": "RTL35762b", "since": "2026-07-24", "since_first_snap": false}], "since": "2026-07-24", "since_first_snap": false}, {"master": "RTL22102", "name": ".22 LR Revolver Speedloader Range Tray, 10 shot Block (Large) w/Lid", "family": "Range Tools", "master_avail": 0, "listings": [{"sku": "RTL22102", "marketplace": "Amazon US", "title": "MakerShot Revolver Range Loading Block", "asin": "B09PFDRPCG", "ff": "RTL22102", "since": "2026-07-29", "since_first_snap": false}], "since": "2026-07-29", "since_first_snap": false}], "fbj_groups": [{"master": "LDN", "name": "Loader N", "family": "Speedloaders Master", "master_avail": 0, "listings": [{"sku": "LDG36B", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Glock Pistol Magazines", "asin": "B01MU5HAI9", "ff": "LDN", "since": "2026-06-29", "since_first_snap": true}], "since": "2026-06-29", "since_first_snap": true}, {"master": "LDSWM", "name": "LDSWM: S&W M&P 22 Magnum", "family": "Speedloaders Master", "master_avail": 0, "listings": [{"sku": "LDSWMP22MB", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Smith & Wesson Pistol Magazines", "asin": "B0CQP4NR9S", "ff": "LDSWM", "since": "2026-06-29", "since_first_snap": true}], "since": "2026-06-29", "since_first_snap": true}]};
+
+const esc = s => (s||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const nListings = DATA.groups.reduce((a,g)=>a+g.listings.length,0);
+const nFbj = DATA.fbj_groups.reduce((a,g)=>a+g.listings.length,0);
+
+document.getElementById('sub').textContent =
+  `FBA snapshot ${DATA.snapshot} · generated ${DATA.generated} · history from ${DATA.first_snapshot} (${DATA.snapshots.length} snapshots)` +
+  (DATA.excluded_bundles ? ` · ${DATA.excluded_bundles} virtual/combo bundle masters (${DATA.excluded_bundle_listings} listings) excluded` : '') +
+  (DATA.excluded_phaseout_listings ? ` · ${DATA.excluded_phaseout_listings} out-of-stock listings under PHASE-OUT masters excluded` : '');
+
+// stats + trend sparkline
+const t = DATA.trend, max = Math.max(...t.map(x=>x[1]),1);
+const pts = t.map((x,i)=>`${(i/(t.length-1))*100},${46-(x[1]/max)*40}`).join(' ');
+document.getElementById('stats').innerHTML = `
+  <div class="stat"><div class="n bad">${DATA.groups.length}</div><div class="l">Master SKUs out (of ${DATA.active_masters} active)</div></div>
+  <div class="stat"><div class="n bad">${nListings}</div><div class="l">Listings affected (of ${DATA.active_listings} active)</div></div>
+  <div class="stat"><div class="n" style="color:var(--amber)">${nFbj}</div><div class="l">Fulfilled by Joey (no FBA presence)</div></div>
+  <div class="trend"><div class="l" style="color:var(--muted);font-size:12px">FBA listings out — last ${t.length} snapshots (${t[0][1]} &rarr; ${t[t.length-1][1]})</div>
+    <svg viewBox="0 0 100 48" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="#b91c1c" stroke-width="1.6"/></svg></div>`;
+
+function sinceLabel(s, first) { return (first ? '&ge; ' : '') + s; }
+
+function renderSection(groups, targetId, f, pillClass, pillWord, emptyMsg) {
+  let shown = 0, shownL = 0, html = '';
+  for (const g of groups) {
+    const rows = f ? g.listings.filter(l =>
+      (g.master+' '+g.name+' '+l.sku+' '+l.title+' '+l.asin+' '+l.ff).toLowerCase().includes(f)
+    ) : g.listings;
+    if (!rows.length) continue;
+    shown++; shownL += rows.length;
+    html += `<details class="master" ${f?'open':''}>
+      <summary>
+        <span class="chev">&#9654;</span>
+        <span class="msku">${esc(g.master)}</span>
+        <span class="mname">${esc(g.name)} ${g.family?`<span class="fam">· ${esc(g.family)}</span>`:''}</span>
+        <span class="pill count">${rows.length} listing${rows.length>1?'s':''}</span>
+        <span class="pill ${pillClass}">${pillWord} ${sinceLabel(esc(g.since), g.since_first_snap)}</span>
+      </summary>
+      <table>
+        <tr><th>Marketplace SKU</th><th>Channel</th><th>Amazon Title</th><th>ASIN</th><th>Routed FF SKU</th><th>Out since</th></tr>
+        ${rows.map(l=>`<tr>
+          <td class="sku">${esc(l.sku)}</td>
+          <td>${esc(l.marketplace)}</td>
+          <td class="title">${esc(l.title)}</td>
+          <td class="asin">${l.asin?`<a href="https://www.amazon.com/dp/${esc(l.asin)}" target="_blank">${esc(l.asin)}</a>`:''}</td>
+          <td class="ff">${esc(l.ff)}</td>
+          <td class="since">${sinceLabel(esc(l.since), l.since_first_snap)}</td>
+        </tr>`).join('')}
+      </table>
+    </details>`;
+  }
+  document.getElementById(targetId).innerHTML = html ||
+    `<div class="none">${f ? 'No matches.' : emptyMsg}</div>`;
+  return [shown, shownL];
+}
+
+function render(filter) {
+  const f = (filter||'').toLowerCase();
+  const [s1, l1] = renderSection(DATA.groups, 'list', f, 'out', 'out',
+    'No FBA outages — every FBA-backed active listing has stock via its route or Master.');
+  const [s2, l2] = renderSection(DATA.fbj_groups, 'fbjlist', f, 'fbj', 'no FBA',
+    'None — every active listing has some FBA presence.');
+  document.getElementById('matchinfo').textContent =
+    f ? `${s1+s2} masters / ${l1+l2} listings match` : '';
+}
+function setAll(open) { document.querySelectorAll('details.master').forEach(d=>d.open=open); }
+document.getElementById('q').addEventListener('input', e => render(e.target.value));
+render('');
+</script>
+</body>
+</html>
