@@ -73,9 +73,6 @@
   <h1>FBA Inventory Outages</h1>
   <div class="sub" id="sub"></div>
   <div class="stats" id="stats"></div>
-  <h2 style="font-size:16px;margin:0 0 4px">Recent changes<span id="changeswindow"></span></h2>
-  <div class="sub" style="margin-bottom:12px">Listings that went out of stock or came back in stock, based on daily FBA snapshots &mdash; so a recovery (like a listing coming back in stock) isn&rsquo;t invisible just because it no longer appears in the outage list below.</div>
-  <div class="changes-card"><div id="changes"></div></div>
   <div class="controls">
     <input type="search" id="q" placeholder="Filter by SKU, title, ASIN&hellip;">
     <button class="ctrl" onclick="setAll(true)">Expand all</button>
@@ -87,6 +84,9 @@
   <div class="sub" style="margin-bottom:12px">No FBA record exists for the listing SKU, its routed fulfillment SKU, or its Master —
     these ship from non-FBA inventory, not an FBA stockout.</div>
   <div id="fbjlist"></div>
+  <h2 style="font-size:16px;margin:28px 0 4px">Recent changes<span id="changeswindow"></span></h2>
+  <div class="sub" style="margin-bottom:12px">Listings that went out of stock or came back in stock, based on daily FBA snapshots &mdash; so a recovery (like a listing coming back in stock) isn&rsquo;t invisible just because it no longer appears in the outage list above.</div>
+  <div class="changes-card"><div id="changes"></div></div>
   <div class="foot">
     Outage = routed fulfillment SKU has 0 FBA available AND Master SKU fallback has 0 available
     (audit check #33 logic). &ldquo;Out since&rdquo; is based on daily FBA snapshots; &ldquo;&ge;&rdquo; means
