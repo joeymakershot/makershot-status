@@ -1,15 +1,1 @@
-[
- {
-  "id": "test1",
-  "master": "RTL35751a",
-  "sku": null,
-  "date": "2026-10-10",
-  "action": "Shipped to FBA",
-  "qty": "24",
-  "ecd": "2026-10-14",
-  "tracking": null,
-  "note": "pipeline test",
-  "who": "Claude",
-  "resolved": false
- }
-]
+[]
