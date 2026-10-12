@@ -39,5 +39,18 @@
   "note": "Shipped qty 5ea units to FBA, quite a bit more left at RSL-Vegas, need to coordinate Mastercase strategy with Joey in case RSL buys.",
   "who": "Jesse",
   "resolved": false
+ },
+ {
+  "id": "mv5qjza78f0t",
+  "master": "RTL22102",
+  "sku": null,
+  "date": "2026-10-12",
+  "action": "Shipped to FBA",
+  "qty": "10",
+  "ecd": "2026-10-12",
+  "tracking": null,
+  "note": "Shipped 10 units to FBA, 74 units to AWD, this action also zeroed out RSL-Vegas",
+  "who": "Jesse",
+  "resolved": false
  }
 ]
