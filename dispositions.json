@@ -26,5 +26,18 @@
   "who": "Jesse",
   "resolved": true,
   "resolvedAt": "2026-10-12"
+ },
+ {
+  "id": "mv5qhz0b81jx",
+  "master": "RTL35762b",
+  "sku": null,
+  "date": "2026-10-12",
+  "action": "Shipped to FBA",
+  "qty": "5",
+  "ecd": "2026-10-12",
+  "tracking": null,
+  "note": "Shipped qty 5ea units to FBA, quite a bit more left at RSL-Vegas, need to coordinate Mastercase strategy with Joey in case RSL buys.",
+  "who": "Jesse",
+  "resolved": false
  }
 ]
