@@ -136,6 +136,17 @@ const REPO = 'joeymakershot/makershot-status';
 const DISP_URL = `https://api.github.com/repos/${REPO}/contents/dispositions.json`;
 const TODAY = new Date().toLocaleDateString('sv-SE'); // local date, not UTC
 
+// localStorage throws SecurityError in sandboxed iframes (Squarespace embed
+// blocks). Fall back to in-memory storage so the page still renders; the
+// editor key just won't persist across reloads in that context.
+const MEM = {};
+const store = {
+  get(k)    { try { return localStorage.getItem(k); } catch (e) { return MEM[k] ?? null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) { MEM[k] = v; } },
+  del(k)    { try { localStorage.removeItem(k); } catch (e) { delete MEM[k]; } },
+};
+function ask(msg) { try { return prompt(msg); } catch (e) { return null; } }
+
 const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const nListings = DATA.groups.reduce((a,g)=>a+g.listings.length,0);
 const nFbj = DATA.fbj_groups.reduce((a,g)=>a+g.listings.length,0);
@@ -181,14 +192,14 @@ async function loadDisp() {
 }
 
 function getKey(forcePrompt) {
-  let k = localStorage.getItem('msDashKey');
+  let k = store.get('msDashKey');
   if (!k || forcePrompt) {
-    k = prompt('Paste the dashboard editor key (ask Joey). Stored only in this browser.');
-    if (k) localStorage.setItem('msDashKey', k.trim());
+    k = ask('Paste the dashboard editor key (ask Joey). Stored only in this browser.');
+    if (k) store.set('msDashKey', k.trim());
   }
   return (k || '').trim();
 }
-function resetKey() { localStorage.removeItem('msDashKey'); alert('Editor key cleared. You will be asked for it on the next save.'); }
+function resetKey() { store.del('msDashKey'); alert('Editor key cleared. You will be asked for it on the next save.'); }
 
 async function commitDisp(message, retrying) {
   const key = getKey(false);
@@ -206,7 +217,7 @@ async function commitDisp(message, retrying) {
     body: JSON.stringify(body),
   });
   if (r.status === 401 || r.status === 403) {
-    localStorage.removeItem('msDashKey');
+    store.del('msDashKey');
     throw new Error('editor key rejected — it was cleared; try again and re-paste it');
   }
   if ((r.status === 409 || r.status === 422) && !retrying) {
@@ -238,7 +249,7 @@ async function saveDispo(master, form) {
   const f = n => form.querySelector(`[name=${n}]`).value.trim();
   if (!f('action')) { err.textContent = 'Pick an action.'; return; }
   const who = f('who') || 'unknown';
-  localStorage.setItem('msDashWho', who);
+  store.set('msDashWho', who);
   const entry = {
     id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
     master, sku: f('sku') || null,
@@ -296,7 +307,7 @@ function dispoHtml(e) {
 }
 
 function dispoForm(master) {
-  const who = localStorage.getItem('msDashWho') || '';
+  const who = store.get('msDashWho') || '';
   return `<div class="dform" id="df-${esc(master)}">
     <label>Action
       <select name="action">
