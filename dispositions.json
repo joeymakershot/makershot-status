@@ -12,5 +12,18 @@
   "who": "Joey",
   "resolved": true,
   "resolvedAt": "2026-10-10"
+ },
+ {
+  "id": "mv5q5uuby6ro",
+  "master": "RTL22102",
+  "sku": null,
+  "date": "2026-10-12",
+  "action": "Shipped to FBA",
+  "qty": "10",
+  "ecd": "2026-10-12",
+  "tracking": null,
+  "note": "Shipped 10 units to FBA, 74 units to AWD, this action also zeroed out RSL-Vegas",
+  "who": "Jesse",
+  "resolved": false
  }
 ]
