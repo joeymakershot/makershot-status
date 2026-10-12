@@ -24,6 +24,7 @@
   "tracking": null,
   "note": "Shipped 10 units to FBA, 74 units to AWD, this action also zeroed out RSL-Vegas",
   "who": "Jesse",
-  "resolved": false
+  "resolved": true,
+  "resolvedAt": "2026-10-12"
  }
 ]
