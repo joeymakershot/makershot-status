@@ -52,5 +52,18 @@
   "note": "Shipped 10 units to FBA, 74 units to AWD, this action also zeroed out RSL-Vegas",
   "who": "Jesse",
   "resolved": false
+ },
+ {
+  "id": "mvmq9d1qkv9q",
+  "master": "LDI",
+  "sku": null,
+  "date": "2026-10-24",
+  "action": "Shipped to FBA",
+  "qty": "60",
+  "ecd": "2026-10-24",
+  "tracking": "1Z23A6V80300138428",
+  "note": null,
+  "who": "Joey",
+  "resolved": false
  }
 ]
