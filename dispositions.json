@@ -91,5 +91,18 @@
   "note": null,
   "who": "Joey",
   "resolved": false
+ },
+ {
+  "id": "mvo0ragbst3u",
+  "master": "LDZ",
+  "sku": null,
+  "date": "2026-10-25",
+  "action": "Restock planned",
+  "qty": "1300",
+  "ecd": "2026-11-16",
+  "tracking": null,
+  "note": "Jesse ordered 1,300 units from Amy on 10/18/2026",
+  "who": "Jesse",
+  "resolved": false
  }
 ]
