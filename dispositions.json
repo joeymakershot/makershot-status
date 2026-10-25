@@ -117,5 +117,18 @@
   "note": "Jesse ordered 551 units from Amy on 10/25/26.",
   "who": "Jesse",
   "resolved": false
+ },
+ {
+  "id": "mvoecut6p3ew",
+  "master": "SPCJ02B",
+  "sku": null,
+  "date": "2026-10-25",
+  "action": "Vendor PO placed",
+  "qty": "552",
+  "ecd": "2026-11-23",
+  "tracking": null,
+  "note": "Jesse ordered 550 units from Amy on 10/25/26.",
+  "who": "Jesse",
+  "resolved": false
  }
 ]
