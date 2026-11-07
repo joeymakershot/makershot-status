@@ -1,0 +1,31 @@
+{
+ "partners": [
+  {
+   "id": "matt",
+   "name": "Matt",
+   "role": "CEO"
+  },
+  {
+   "id": "jesse",
+   "name": "Jesse",
+   "role": "CTO"
+  },
+  {
+   "id": "joey",
+   "name": "Joey",
+   "role": "CFO"
+  }
+ ],
+ "reports": [
+  {
+   "id": "inventory-outages",
+   "title": "Inventory Outages",
+   "owner": "jesse",
+   "description": "FBA stock-outs by Master and listing, inbound, dispositions",
+   "order": 1,
+   "path": "../r/inventory-outages/",
+   "updated": "2026-11-07T22:35:15Z"
+  }
+ ],
+ "generated": "2026-11-07T22:35:15Z"
+}

@@ -1,446 +1,112 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MakerShot — FBA Inventory Outages</title>
+<meta name="robots" content="noindex">
+<title>MakerShot — Reports</title>
 <style>
-  :root {
-    --bg: #f6f7f9; --card: #ffffff; --ink: #1a1d21; --muted: #6b7280;
-    --line: #e5e7eb; --red: #b91c1c; --red-bg: #fef2f2; --amber: #b45309;
-    --accent: #1f2937; --green: #047857; --green-bg: #ecfdf5;
-    --blue: #1d4ed8; --blue-bg: #eff6ff;
-  }
+  :root { --bg:#f6f7f9; --card:#fff; --ink:#1a1d21; --muted:#6b7280; --line:#e5e7eb; --accent:#1f2937; --blue:#1d4ed8; --blue-bg:#eff6ff; }
   * { box-sizing: border-box; }
-  body { margin: 0; font: 14px/1.45 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-         background: var(--bg); color: var(--ink); }
-  .wrap { max-width: 1080px; margin: 0 auto; padding: 24px 20px 60px; }
-  h1 { font-size: 20px; margin: 0 0 4px; }
-  h2 { font-size: 16px; margin: 28px 0 4px; }
-  .sub { color: var(--muted); margin-bottom: 20px; }
-  .sub2 { color: var(--muted); margin-bottom: 12px; font-size: 13px; }
-  .stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
-  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
-          padding: 12px 18px; min-width: 130px; }
-  .stat .n { font-size: 24px; font-weight: 700; }
-  .stat .n.bad { color: var(--red); }
-  .stat .l { color: var(--muted); font-size: 12px; }
-  .trend { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
-           padding: 12px 18px; flex: 1 1 260px; }
-  .trend svg { display: block; width: 100%; height: 48px; }
-  .controls { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; }
-  input[type=search] { padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px;
-                       width: 280px; font-size: 14px; background: var(--card); }
-  button.ctrl { padding: 7px 12px; border: 1px solid var(--line); background: var(--card);
-                border-radius: 8px; cursor: pointer; font-size: 13px; }
-  button.ctrl:hover { background: #f0f1f3; }
-  details.master { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
-                   margin-bottom: 8px; overflow: hidden; }
-  details.master[open] { border-color: #cbd5e1; }
-  summary { list-style: none; cursor: pointer; padding: 12px 16px; display: flex;
-            align-items: center; gap: 10px; flex-wrap: wrap; }
-  summary::-webkit-details-marker { display: none; }
-  summary .chev { color: var(--muted); font-size: 11px; transition: transform .15s; width: 12px; }
-  details[open] summary .chev { transform: rotate(90deg); }
-  .msku { font-weight: 700; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-          font-size: 14px; min-width: 110px; }
-  .mname { flex: 1; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 160px; }
-  .fam { color: var(--muted); font-size: 12px; }
-  .pill { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
-  .pill.out { background: var(--red-bg); color: var(--red); }
-  .pill.fbj { background: #fffbeb; color: var(--amber); }
-  .pill.count { background: #eef2ff; color: #3730a3; }
-  .pill.ok { background: var(--green-bg); color: var(--green); }
-  .pill.inb { background: var(--blue-bg); color: var(--blue); }
-  .chips { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-  .dispo { font-size: 12px; background: var(--blue-bg); border: 1px solid #dbeafe;
-           color: #1e3a8a; border-radius: 8px; padding: 4px 10px; margin: 2px 0;
-           display: inline-flex; gap: 8px; align-items: center; }
-  .dispo.overdue { background: #fff7ed; border-color: #fed7aa; color: #9a3412; }
-  .dispo button { border: none; background: none; color: inherit; cursor: pointer;
-                  font-size: 11px; text-decoration: underline; padding: 0; }
-  .dispobar { padding: 4px 16px 10px 40px; display: flex; flex-direction: column; align-items: flex-start; }
-  .addbtn { font-size: 12px; color: var(--blue); background: none; border: none;
-            cursor: pointer; padding: 2px 0; text-decoration: underline; }
-  .dform { background: #f8fafc; border-top: 1px solid var(--line); padding: 12px 16px;
-           display: none; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
-  .dform.open { display: flex; }
-  .dform label { display: flex; flex-direction: column; font-size: 11px; color: var(--muted); gap: 3px; }
-  .dform input, .dform select { padding: 6px 8px; border: 1px solid var(--line);
-           border-radius: 6px; font-size: 13px; background: #fff; }
-  .dform input.wide { width: 220px; }
-  .dform button.save { padding: 7px 14px; border: none; background: var(--accent); color: #fff;
-           border-radius: 6px; cursor: pointer; font-size: 13px; }
-  .dform .err { color: var(--red); font-size: 12px; width: 100%; }
-  .banner { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; border-radius: 8px;
-            padding: 8px 14px; font-size: 13px; margin-bottom: 12px; display: none; }
-  .changes-card { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
-                  max-height: 420px; overflow: auto; margin-bottom: 12px; }
-  .changes-card table { font-size: 13px; }
-  .changes-card th { position: sticky; top: 0; background: var(--card); }
-  td.date { white-space: nowrap; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { text-align: left; color: var(--muted); font-weight: 600; font-size: 11px;
-       text-transform: uppercase; letter-spacing: .03em; padding: 6px 16px; border-top: 1px solid var(--line); }
-  td { padding: 7px 16px; border-top: 1px solid var(--line); vertical-align: top; }
-  td.sku, td.ff { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; white-space: nowrap; }
-  td.title { color: #374151; }
-  .asin a { color: #2563eb; text-decoration: none; }
-  .asin a:hover { text-decoration: underline; }
-  .since { white-space: nowrap; color: var(--amber); font-weight: 600; }
-  .none { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
-          padding: 24px; text-align: center; color: var(--muted); }
-  .foot { color: var(--muted); font-size: 12px; margin-top: 24px; }
-  .keylink { color: var(--muted); font-size: 12px; cursor: pointer; text-decoration: underline; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--bg); color: var(--ink); font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; flex-direction: column; min-height: 100vh; }
+  header { background: var(--card); border-bottom: 1px solid var(--line); padding: 10px 16px 0; }
+  .top { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  h1 { font-size: 15px; margin: 0; letter-spacing: .02em; }
+  .sub { color: var(--muted); font-size: 12px; }
+  nav.tabs { display: flex; gap: 2px; margin-top: 8px; overflow-x: auto; }
+  .tab { appearance: none; border: 0; background: none; padding: 9px 16px; font: inherit; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; }
+  .tab:hover { color: var(--ink); }
+  .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+  .tab .n { margin-left: 6px; font-weight: 500; font-size: 11px; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 0 6px; color: var(--muted); }
+  .bar { display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: var(--card); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .role { color: var(--muted); font-size: 12px; margin-right: 4px; }
+  .rep { appearance: none; border: 1px solid var(--line); background: var(--card); border-radius: 6px; padding: 5px 11px; font: inherit; font-size: 13px; cursor: pointer; color: var(--ink); }
+  .rep:hover { border-color: #9ca3af; }
+  .rep[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .spacer { flex: 1; }
+  a.pop { color: var(--blue); text-decoration: none; font-size: 12px; }
+  a.pop:hover { text-decoration: underline; }
+  main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  .meta { padding: 6px 16px; color: var(--muted); font-size: 12px; }
+  iframe { flex: 1; width: 100%; border: 0; min-height: 720px; background: var(--card); }
+  .empty { margin: 48px auto; max-width: 440px; text-align: center; color: var(--muted); padding: 0 16px; }
+  .empty b { color: var(--ink); display: block; font-size: 15px; margin-bottom: 4px; }
+  [hidden] { display: none !important; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>FBA Inventory Outages</h1>
-  <div class="sub" id="sub"></div>
-  <div class="banner" id="banner"></div>
-  <div class="stats" id="stats"></div>
-  <div class="controls">
-    <input type="search" id="q" placeholder="Filter by SKU, title, ASIN&hellip;">
-    <button class="ctrl" onclick="setAll(true)">Expand all</button>
-    <button class="ctrl" onclick="setAll(false)">Collapse all</button>
-    <span id="matchinfo" style="color:var(--muted);font-size:12px"></span>
-  </div>
-  <h2 style="margin-top:8px">Needs action</h2>
-  <div class="sub2">Out of stock with no inbound inventory and no disposition recorded &mdash; these are the restock decisions.</div>
-  <div id="na"></div>
-  <h2>In motion &mdash; replenishment underway</h2>
-  <div class="sub2">Still out, but Amazon shows inbound/FC-transfer units, or a disposition has been recorded below. No further action needed unless overdue.</div>
-  <div id="im"></div>
-  <h2 id="fbjhead">Fulfilled by Joey — live listings with no FBA presence</h2>
-  <div class="sub2">No FBA record exists for the listing SKU, its routed fulfillment SKU, or its Master &mdash;
-    these ship from non-FBA inventory, not an FBA stockout.</div>
-  <div id="fbjlist"></div>
-  <h2>Recent changes<span id="changeswindow"></span></h2>
-  <div class="sub2">Listings that went out of stock or came back in stock, based on daily FBA snapshots &mdash; so a recovery isn&rsquo;t invisible just because it no longer appears in the outage list above.</div>
-  <div class="changes-card"><div id="changes"></div></div>
-  <div class="foot">
-    Outage = routed fulfillment SKU has 0 FBA available AND Master SKU fallback has 0 available
-    (audit check #33 logic). &ldquo;Out since&rdquo; is based on daily FBA snapshots; &ldquo;&ge;&rdquo; means
-    already out at the earliest snapshot on file. Master-placeholder listing rows are suppressed;
-    M-suffix FBM duplicates are collapsed into their non-M base SKU. Inbound quantities come from the
-    nightly SP-API Manage Inventory report (working = shipment plan created, shipped = in transit,
-    receiving = at FC; reserved includes FC transfer/processing). Dispositions are stored in GitHub
-    (<code>dispositions.json</code>) and update live for everyone; a disposition auto-archives once its
-    Master is no longer out. <span class="keylink" onclick="resetKey()">Reset editor key</span>
-  </div>
-</div>
+<header>
+  <div class="top"><h1>MAKERSHOT REPORTS</h1><span class="sub" id="gen"></span></div>
+  <nav class="tabs" id="tabs" role="tablist"></nav>
+</header>
+<div class="bar" id="bar"></div>
+<main>
+  <div class="meta" id="meta" hidden></div>
+  <iframe id="frame" title="Report" hidden></iframe>
+  <div class="empty" id="empty" hidden></div>
+</main>
 <script>
-const DATA = {"generated": "2026-11-07", "snapshot": "2026-11-06", "first_snapshot": "2026-06-29", "snapshots": ["2026-06-29", "2026-06-30", "2026-07-01", "2026-07-02", "2026-07-04", "2026-07-07", "2026-07-09", "2026-07-11", "2026-07-13", "2026-07-15", "2026-07-17", "2026-07-18", "2026-07-20", "2026-07-22", "2026-07-23", "2026-07-24", "2026-07-25", "2026-07-27", "2026-07-28", "2026-07-29", "2026-07-30", "2026-07-31", "2026-08-01", "2026-08-03", "2026-08-04", "2026-08-06", "2026-08-07", "2026-08-08", "2026-08-09", "2026-08-10", "2026-08-11", "2026-08-12", "2026-08-13", "2026-08-14", "2026-08-17", "2026-08-18", "2026-08-19", "2026-08-20", "2026-08-21", "2026-08-23", "2026-08-24", "2026-08-25", "2026-08-27", "2026-08-28", "2026-08-30", "2026-08-31", "2026-09-01", "2026-09-02", "2026-09-04", "2026-09-05", "2026-09-06", "2026-09-07", "2026-09-08", "2026-09-09", "2026-09-10", "2026-09-11", "2026-09-12", "2026-09-13", "2026-09-14", "2026-09-15", "2026-09-17", "2026-09-18", "2026-09-19", "2026-09-20", "2026-09-21", "2026-09-24", "2026-09-25", "2026-09-27", "2026-09-28", "2026-09-29", "2026-09-30", "2026-10-01", "2026-10-02", "2026-10-03", "2026-10-04", "2026-10-05", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09", "2026-10-10", "2026-10-11", "2026-10-12", "2026-10-13", "2026-10-14", "2026-10-15", "2026-10-16", "2026-10-17", "2026-10-18", "2026-10-19", "2026-10-20", "2026-10-21", "2026-10-22", "2026-10-23", "2026-10-24", "2026-10-27", "2026-10-31", "2026-11-01", "2026-11-02", "2026-11-03", "2026-11-04", "2026-11-05", "2026-11-06"], "trend": [["2026-06-29", 18], ["2026-06-30", 18], ["2026-07-01", 18], ["2026-07-02", 18], ["2026-07-04", 51], ["2026-07-07", 51], ["2026-07-09", 51], ["2026-07-11", 51], ["2026-07-13", 51], ["2026-07-15", 18], ["2026-07-17", 18], ["2026-07-18", 18], ["2026-07-20", 18], ["2026-07-22", 18], ["2026-07-23", 19], ["2026-07-24", 19], ["2026-07-25", 19], ["2026-07-27", 19], ["2026-07-28", 19], ["2026-07-29", 20], ["2026-07-30", 20], ["2026-07-31", 20], ["2026-08-01", 20], ["2026-08-03", 20], ["2026-08-04", 20], ["2026-08-06", 19], ["2026-08-07", 19], ["2026-08-08", 18], ["2026-08-09", 18], ["2026-08-10", 18], ["2026-08-11", 18], ["2026-08-12", 18], ["2026-08-13", 18], ["2026-08-14", 18], ["2026-08-17", 16], ["2026-08-18", 16], ["2026-08-19", 16], ["2026-08-20", 16], ["2026-08-21", 16], ["2026-08-23", 16], ["2026-08-24", 16], ["2026-08-25", 16], ["2026-08-27", 16], ["2026-08-28", 16], ["2026-08-30", 16], ["2026-08-31", 16], ["2026-09-01", 15], ["2026-09-02", 16], ["2026-09-04", 16], ["2026-09-05", 15], ["2026-09-06", 15], ["2026-09-07", 15], ["2026-09-08", 22], ["2026-09-09", 23], ["2026-09-10", 23], ["2026-09-11", 23], ["2026-09-12", 23], ["2026-09-13", 23], ["2026-09-14", 23], ["2026-09-15", 23], ["2026-09-17", 23], ["2026-09-18", 23], ["2026-09-19", 16], ["2026-09-20", 16], ["2026-09-21", 16], ["2026-09-24", 16], ["2026-09-25", 16], ["2026-09-27", 16], ["2026-09-28", 16], ["2026-09-29", 16], ["2026-09-30", 16], ["2026-10-01", 16], ["2026-10-02", 16], ["2026-10-03", 16], ["2026-10-04", 16], ["2026-10-05", 16], ["2026-10-06", 16], ["2026-10-07", 17], ["2026-10-08", 21], ["2026-10-09", 22], ["2026-10-10", 21], ["2026-10-11", 21], ["2026-10-12", 20], ["2026-10-13", 20], ["2026-10-14", 20], ["2026-10-15", 18], ["2026-10-16", 17], ["2026-10-17", 17], ["2026-10-18", 17], ["2026-10-19", 17], ["2026-10-20", 17], ["2026-10-21", 17], ["2026-10-22", 15], ["2026-10-23", 16], ["2026-10-24", 16], ["2026-10-27", 16], ["2026-10-31", 17], ["2026-11-01", 17], ["2026-11-02", 32], ["2026-11-03", 25], ["2026-11-04", 25], ["2026-11-05", 24], ["2026-11-06", 24]], "active_listings": 368, "active_masters": 153, "excluded_bundles": 32, "excluded_bundle_listings": 34, "excluded_phaseout_listings": 9, "excluded_phaseout_masters": 10, "inbound_snapshot": "2026-11-07", "groups": [{"master": "LDSTE", "name": "LDSTE: Long Double Stack .380", "family": "Speedloaders Master", "master_avail": 0, "listings": [{"sku": "LDRLCM380B", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Ruger Pistol Magazines", "asin": "B0CQC2YDGG", "ff": "LDSTE", "since": "2026-06-29", "since_first_snap": true, "inbound": null}, {"sku": "LDSSP365380B", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Sig Sauer Pistol Magazines", "asin": "B0CQC2Q8CP", "ff": "LDSTE", "since": "2026-06-29", "since_first_snap": true, "inbound": null}], "since": "2026-06-29", "since_first_snap": true, "inbound": null}, {"master": "LDSWM", "name": "LDSWM: S&W M&P 22 Magnum", "family": "Speedloaders Master", "master_avail": 0, "listings": [{"sku": "LDSWMP22MB", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Smith & Wesson Pistol Magazines", "asin": "B0CQP4NR9S", "ff": "LDSWM", "since": "2026-06-29", "since_first_snap": true, "inbound": null}], "since": "2026-06-29", "since_first_snap": true, "inbound": null}, {"master": "LDZ", "name": "Loader Z", "family": "Speedloaders", "master_avail": 0, "listings": [{"sku": "LDFN57B", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for FN Herstal Pistol Magazines", "asin": "B01MT0Z63I", "ff": "LDZ", "since": "2026-06-29", "since_first_snap": true, "inbound": null}], "since": "2026-06-29", "since_first_snap": true, "inbound": null}, {"master": "SPCJ02B", "name": "Slide Plate for Sig Sauer P320, Skull", "family": "Slide Plates", "master_avail": 0, "listings": [{"sku": "SPCJ02B", "marketplace": "Amazon US", "title": "MakerShot 3D Aluminum Slide Cover Plate", "asin": "B08KPD5B1M", "ff": "SPCJ02B", "since": "2026-06-29", "since_first_snap": true, "inbound": null}], "since": "2026-06-29", "since_first_snap": true, "inbound": null}, {"master": "RTL35762b", "name": "MakerShot .38 Special / .357 Magnum Revolver Range Loading Tray w/ Lid, 6 shot (version B2)", "family": "Range Tools", "master_avail": 0, "listings": [{"sku": "RTL35762b", "marketplace": "Amazon US", "title": "MakerShot Revolver Range Loading Block", "asin": "B08PNRC8R9", "ff": "RTL35762b", "since": "2026-07-24", "since_first_snap": false, "inbound": {"working": 0, "shipped": 0, "receiving": 0, "reserved": 5}}], "since": "2026-07-24", "since_first_snap": false, "inbound": {"working": 0, "shipped": 0, "receiving": 0, "reserved": 5}}, {"master": "RTL35762a", "name": "MakerShot .38 Special / .357 Magnum Revolver Range Loading Tray w/ Lid, 6 shot (version A2)", "family": "Range Tools", "master_avail": 0, "listings": [{"sku": "RTL35762a", "marketplace": "Amazon US", "title": "MakerShot Revolver Range Loading Block", "asin": "B08PPNPHDV", "ff": "RTL35762a", "since": "2026-10-07", "since_first_snap": false, "inbound": null}], "since": "2026-10-07", "since_first_snap": false, "inbound": null}, {"master": "MC350144B", "name": "Magazine Carrier, Compatible With 1911", "family": "Magazine Couplers", "master_avail": 0, "listings": [{"sku": "MC350144B", "marketplace": "Amazon US", "title": "MakerShot Magazine Carrier", "asin": "B09YXX4MS3", "ff": "MC350144B", "since": "2026-10-08", "since_first_snap": false, "inbound": null}], "since": "2026-10-08", "since_first_snap": false, "inbound": null}, {"master": "MC278116B", "name": "Magazine Carrier, Compatible With Sig Sauer P238", "family": "Magazine Couplers", "master_avail": 0, "listings": [{"sku": "MC278116B", "marketplace": "Amazon US", "title": "MakerShot Magazine Carrier", "asin": "B09YXQLD1Y", "ff": "MC278116B", "since": "2026-10-23", "since_first_snap": false, "inbound": null}], "since": "2026-10-23", "since_first_snap": false, "inbound": null}, {"master": "LDC", "name": "Loader C", "family": "Speedloaders Master", "master_avail": 0, "listings": [{"sku": "LDBC380B", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Beretta Pistol Magazines", "asin": "B01HUTPHOC", "ff": "LDC", "since": "2026-11-02", "since_first_snap": false, "inbound": null}, {"sku": "LDBM85B", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Beretta Pistol Magazines", "asin": "B08BL9K9WW", "ff": "LDC", "since": "2026-11-02", "since_first_snap": false, "inbound": null}, {"sku": "LDBTB", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Bersa Pistol Magazines", "asin": "B01CVB9NQC", "ff": "LDC", "since": "2026-11-02", "since_first_snap": false, "inbound": null}, {"sku": "LDCM380B", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Colt Pistol Magazines", "asin": "B01CJHC0OA", "ff": "LDC", "since": "2026-11-02", "since_first_snap": false, "inbound": null}, {"sku": "LDD380B", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Diamondback Pistol Magazines", "asin": "B01CVB9P56", "ff": "LDC", "since": "2026-11-02", "since_first_snap": false, "inbound": null}, {"sku": "LDKCW380B", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Kahr Arms Pistol Magazines", "asin": "B01CJHC342", "ff": "LDC", "since": "2026-11-02", "since_first_snap": false, "inbound": null}, {"sku": "LDKMC380B", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Kimber Pistol Magazines", "asin": "B01CJHC6EE", "ff": "LDC", "since": "2026-11-02", "since_first_snap": false, "inbound": null}, {"sku": "LDKTP3ATB", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Kel-Tec Pistol Magazines", "asin": "B01CJHC4T6", "ff": "LDC", "since": "2026-11-02", "since_first_snap": false, "inbound": null}, {"sku": "LDMRMDEB", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Magnum Research Pistol Magazines", "asin": "B01HUTP508", "ff": "LDC", "since": "2026-11-02", "since_first_snap": false, "inbound": null}, {"sku": "LDNG380B", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for North American Arms Pistol Magazines", "asin": "B01M744IGU", "ff": "LDC", "since": "2026-11-02", "since_first_snap": false, "inbound": null}, {"sku": "LDSSP232B", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Sig Sauer Pistol Magazines", "asin": "B08BL8S47Y", "ff": "LDC", "since": "2026-11-02", "since_first_snap": false, "inbound": null}, {"sku": "LDTPT738B", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Taurus Pistol Magazines", "asin": "B01CJHC70W", "ff": "LDC", "since": "2026-11-02", "since_first_snap": false, "inbound": null}, {"sku": "LDTSB", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Taurus Pistol Magazines", "asin": "B08BL99YVV", "ff": "LDC", "since": "2026-11-02", "since_first_snap": false, "inbound": null}, {"sku": "LDWPK380B", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Walther Pistol Magazines", "asin": "B01CVB9SIK", "ff": "LDC", "since": "2026-11-02", "since_first_snap": false, "inbound": null}], "since": "2026-11-02", "since_first_snap": false, "inbound": null}, {"master": "MC324168B", "name": "Magazine Carrier, Compatible With M&P Shield 9", "family": "Magazine Couplers", "master_avail": 0, "listings": [{"sku": "MC324168B", "marketplace": "Amazon US", "title": "MakerShot Magazine Carrier", "asin": "B09YXXMX3Q", "ff": "MC324168B", "since": "2026-11-02", "since_first_snap": false, "inbound": null}], "since": "2026-11-02", "since_first_snap": false, "inbound": null}], "fbj_groups": [{"master": "LDN", "name": "Loader N", "family": "Speedloaders Master", "master_avail": 0, "listings": [{"sku": "LDG36B", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Glock Pistol Magazines", "asin": "B01MU5HAI9", "ff": "LDN", "since": "2026-06-29", "since_first_snap": true, "inbound": null}], "since": "2026-06-29", "since_first_snap": true, "inbound": null}], "changes": [{"date": "2026-11-05", "direction": "recovered", "sku": "RL05U", "master": "RL05U", "name": ".38 Sp / .357 Mag, 7 Shot\nRL05 Revolver Loader", "marketplace": "Amazon US", "title": "MakerShot Revolver Speed Loaders", "asin": "B0CLYJ43WG"}, {"date": "2026-11-04", "direction": "recovered", "sku": "RTL22102", "master": "RTL22102", "name": ".22 LR Revolver Speedloader Range Tray, 10 shot Block (Large) w/Lid", "marketplace": "Amazon US", "title": "MakerShot Revolver Range Loading Block", "asin": "B09PFDRPCG"}, {"date": "2026-11-04", "direction": "went_out", "sku": "RL05U", "master": "RL05U", "name": ".38 Sp / .357 Mag, 7 Shot\nRL05 Revolver Loader", "marketplace": "Amazon US", "title": "MakerShot Revolver Speed Loaders", "asin": "B0CLYJ43WG"}, {"date": "2026-11-03", "direction": "recovered", "sku": "RL05U", "master": "RL05U", "name": ".38 Sp / .357 Mag, 7 Shot\nRL05 Revolver Loader", "marketplace": "Amazon US", "title": "MakerShot Revolver Speed Loaders", "asin": "B0CLYJ43WG"}, {"date": "2026-11-03", "direction": "recovered", "sku": "LDSWMP10B", "master": "LDI", "name": "Loader I", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Smith & Wesson Pistol Magazines", "asin": "B0FCHMRJNV"}, {"date": "2026-11-03", "direction": "recovered", "sku": "LDSC45B", "master": "LDI", "name": "Loader I", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Stoeger Pistol Magazines", "asin": "B07B4T8LTV"}, {"date": "2026-11-03", "direction": "recovered", "sku": "LDRSR45B", "master": "LDI", "name": "Loader I", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Ruger Pistol Magazines", "asin": "B07B4TSQTN"}, {"date": "2026-11-03", "direction": "recovered", "sku": "LDEAAW45B", "master": "LDI", "name": "Loader I", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for EAA Pistol Magazines", "asin": "B08BLB7P5K"}, {"date": "2026-11-03", "direction": "recovered", "sku": "LDBPX445B", "master": "LDI", "name": "Loader I", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Beretta Pistol Magazines", "asin": "B07B4TGYP4"}, {"date": "2026-11-03", "direction": "recovered", "sku": "LDBC45B", "master": "LDI", "name": "Loader I", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Beretta Pistol Magazines", "asin": "B08BL9CTQX"}, {"date": "2026-11-02", "direction": "went_out", "sku": "MC324168B", "master": "MC324168B", "name": "Magazine Carrier, Compatible With M&P Shield 9", "marketplace": "Amazon US", "title": "MakerShot Magazine Carrier", "asin": "B09YXXMX3Q"}, {"date": "2026-11-02", "direction": "went_out", "sku": "LDWPK380B", "master": "LDC", "name": "Loader C", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Walther Pistol Magazines", "asin": "B01CVB9SIK"}, {"date": "2026-11-02", "direction": "went_out", "sku": "LDTSB", "master": "LDC", "name": "Loader C", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Taurus Pistol Magazines", "asin": "B08BL99YVV"}, {"date": "2026-11-02", "direction": "went_out", "sku": "LDTPT738B", "master": "LDC", "name": "Loader C", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Taurus Pistol Magazines", "asin": "B01CJHC70W"}, {"date": "2026-11-02", "direction": "went_out", "sku": "LDSSP232B", "master": "LDC", "name": "Loader C", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Sig Sauer Pistol Magazines", "asin": "B08BL8S47Y"}, {"date": "2026-11-02", "direction": "went_out", "sku": "LDNG380B", "master": "LDC", "name": "Loader C", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for North American Arms Pistol Magazines", "asin": "B01M744IGU"}, {"date": "2026-11-02", "direction": "went_out", "sku": "LDMRMDEB", "master": "LDC", "name": "Loader C", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Magnum Research Pistol Magazines", "asin": "B01HUTP508"}, {"date": "2026-11-02", "direction": "went_out", "sku": "LDKTP3ATB", "master": "LDC", "name": "Loader C", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Kel-Tec Pistol Magazines", "asin": "B01CJHC4T6"}, {"date": "2026-11-02", "direction": "went_out", "sku": "LDKMC380B", "master": "LDC", "name": "Loader C", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Kimber Pistol Magazines", "asin": "B01CJHC6EE"}, {"date": "2026-11-02", "direction": "went_out", "sku": "LDKCW380B", "master": "LDC", "name": "Loader C", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Kahr Arms Pistol Magazines", "asin": "B01CJHC342"}, {"date": "2026-11-02", "direction": "went_out", "sku": "LDD380B", "master": "LDC", "name": "Loader C", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Diamondback Pistol Magazines", "asin": "B01CVB9P56"}, {"date": "2026-11-02", "direction": "went_out", "sku": "LDCM380B", "master": "LDC", "name": "Loader C", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Colt Pistol Magazines", "asin": "B01CJHC0OA"}, {"date": "2026-11-02", "direction": "went_out", "sku": "LDBTB", "master": "LDC", "name": "Loader C", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Bersa Pistol Magazines", "asin": "B01CVB9NQC"}, {"date": "2026-11-02", "direction": "went_out", "sku": "LDBM85B", "master": "LDC", "name": "Loader C", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Beretta Pistol Magazines", "asin": "B08BL9K9WW"}, {"date": "2026-11-02", "direction": "went_out", "sku": "LDBC380B", "master": "LDC", "name": "Loader C", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Beretta Pistol Magazines", "asin": "B01HUTPHOC"}, {"date": "2026-10-31", "direction": "went_out", "sku": "RTL22102", "master": "RTL22102", "name": ".22 LR Revolver Speedloader Range Tray, 10 shot Block (Large) w/Lid", "marketplace": "Amazon US", "title": "MakerShot Revolver Range Loading Block", "asin": "B09PFDRPCG"}, {"date": "2026-10-23", "direction": "went_out", "sku": "MC278116B", "master": "MC278116B", "name": "Magazine Carrier, Compatible With Sig Sauer P238", "marketplace": "Amazon US", "title": "MakerShot Magazine Carrier", "asin": "B09YXQLD1Y"}, {"date": "2026-10-22", "direction": "recovered", "sku": "RTL22102", "master": "RTL22102", "name": ".22 LR Revolver Speedloader Range Tray, 10 shot Block (Large) w/Lid", "marketplace": "Amazon US", "title": "MakerShot Revolver Range Loading Block", "asin": "B09PFDRPCG"}, {"date": "2026-10-22", "direction": "recovered", "sku": "MC324168B", "master": "MC324168B", "name": "Magazine Carrier, Compatible With M&P Shield 9", "marketplace": "Amazon US", "title": "MakerShot Magazine Carrier", "asin": "B09YXXMX3Q"}, {"date": "2026-10-16", "direction": "recovered", "sku": "RUGER-LDR57100", "master": "RUGER-LDR57100", "name": "Magazine Speed Loader, Ruger Co-Branded, Compatible with Ruger 57 - 100 Unit Packs", "marketplace": "Amazon US", "title": "MakerShot RUGER-LDR57100", "asin": "B0FGMYFVGC"}, {"date": "2026-10-15", "direction": "recovered", "sku": "MC335234B", "master": "MC335234B", "name": "Magazine Carrier, Compatible With Glock 17 / 19 / 26 / 34", "marketplace": "Amazon US", "title": "MakerShot Magazine Carrier", "asin": "B0846T3VL1"}, {"date": "2026-10-15", "direction": "recovered", "sku": "LDKTP1722B", "master": "LDKPS", "name": "LDKPS: Keltec P17 .22", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Kel-Tec Pistol Magazines", "asin": "B0CQC6FBNL"}, {"date": "2026-10-14", "direction": "went_out", "sku": "MC335234B", "master": "MC335234B", "name": "Magazine Carrier, Compatible With Glock 17 / 19 / 26 / 34", "marketplace": "Amazon US", "title": "MakerShot Magazine Carrier", "asin": "B0846T3VL1"}, {"date": "2026-10-14", "direction": "recovered", "sku": "MC324144B", "master": "MC324144B", "name": "Magazine Carrier, Compatible With Springfield Armory XDS 9", "marketplace": "Amazon US", "title": "MakerShot Magazine Carrier", "asin": "B09YY98836"}, {"date": "2026-10-12", "direction": "recovered", "sku": "RTL35751a", "master": "RTL35751a", "name": "MAKERSHOT .38 Special / .357 Magnum Revolver Range Loading Block, 5 shot - Type 1a", "marketplace": "Amazon US", "title": "MakerShot Revolver Range Loading Block", "asin": "B09PFFGT7D"}, {"date": "2026-10-12", "direction": "went_out", "sku": "MC324168B", "master": "MC324168B", "name": "Magazine Carrier, Compatible With M&P Shield 9", "marketplace": "Amazon US", "title": "MakerShot Magazine Carrier", "asin": "B09YXXMX3Q"}, {"date": "2026-10-12", "direction": "recovered", "sku": "MC278116B", "master": "MC278116B", "name": "Magazine Carrier, Compatible With Sig Sauer P238", "marketplace": "Amazon US", "title": "MakerShot Magazine Carrier", "asin": "B09YXQLD1Y"}, {"date": "2026-10-10", "direction": "recovered", "sku": "SPCS04B", "master": "SPCS04B", "name": "Slide Plate for Sig Sauer P365, Biohazard", "marketplace": "Amazon US", "title": "MakerShot 3D Aluminum Slide Cover Plate", "asin": "B092T2272R"}, {"date": "2026-10-10", "direction": "recovered", "sku": "MC326226B", "master": "MC326226B", "name": "Magazine Carrier, Compatible With FNS-9", "marketplace": "Amazon US", "title": "MakerShot Magazine Carrier", "asin": "B09YY3RVLQ"}, {"date": "2026-10-10", "direction": "went_out", "sku": "MC278116B", "master": "MC278116B", "name": "Magazine Carrier, Compatible With Sig Sauer P238", "marketplace": "Amazon US", "title": "MakerShot Magazine Carrier", "asin": "B09YXQLD1Y"}, {"date": "2026-10-09", "direction": "went_out", "sku": "MC326226B", "master": "MC326226B", "name": "Magazine Carrier, Compatible With FNS-9", "marketplace": "Amazon US", "title": "MakerShot Magazine Carrier", "asin": "B09YY3RVLQ"}, {"date": "2026-10-09", "direction": "recovered", "sku": "MC324168B", "master": "MC324168B", "name": "Magazine Carrier, Compatible With M&P Shield 9", "marketplace": "Amazon US", "title": "MakerShot Magazine Carrier", "asin": "B09YXXMX3Q"}, {"date": "2026-10-09", "direction": "went_out", "sku": "LDKTP1722B", "master": "LDKPS", "name": "LDKPS: Keltec P17 .22", "marketplace": "Amazon US", "title": "MakerShot Magazine Speed Loaders for Kel-Tec Pistol Magazines", "asin": "B0CQC6FBNL"}, {"date": "2026-10-08", "direction": "went_out", "sku": "SPCS04B", "master": "SPCS04B", "name": "Slide Plate for Sig Sauer P365, Biohazard", "marketplace": "Amazon US", "title": "MakerShot 3D Aluminum Slide Cover Plate", "asin": "B092T2272R"}, {"date": "2026-10-08", "direction": "went_out", "sku": "MC350144B", "master": "MC350144B", "name": "Magazine Carrier, Compatible With 1911", "marketplace": "Amazon US", "title": "MakerShot Magazine Carrier", "asin": "B09YXX4MS3"}, {"date": "2026-10-08", "direction": "went_out", "sku": "MC324168B", "master": "MC324168B", "name": "Magazine Carrier, Compatible With M&P Shield 9", "marketplace": "Amazon US", "title": "MakerShot Magazine Carrier", "asin": "B09YXXMX3Q"}, {"date": "2026-10-08", "direction": "went_out", "sku": "MC324144B", "master": "MC324144B", "name": "Magazine Carrier, Compatible With Springfield Armory XDS 9", "marketplace": "Amazon US", "title": "MakerShot Magazine Carrier", "asin": "B09YY98836"}, {"date": "2026-10-07", "direction": "went_out", "sku": "RTL35762a", "master": "RTL35762a", "name": "MakerShot .38 Special / .357 Magnum Revolver Range Loading Tray w/ Lid, 6 shot (version A2)", "marketplace": "Amazon US", "title": "MakerShot Revolver Range Loading Block", "asin": "B08PPNPHDV"}], "change_window_days": 30};
-const REPO = 'joeymakershot/makershot-status';
-const DISP_URL = `https://api.github.com/repos/${REPO}/contents/dispositions.json`;
-const TODAY = new Date().toLocaleDateString('sv-SE'); // local date, not UTC
-
-// localStorage throws SecurityError in sandboxed iframes (Squarespace embed
-// blocks). Fall back to in-memory storage so the page still renders; the
-// editor key just won't persist across reloads in that context.
+const DATA = {"partners": [{"id": "matt", "name": "Matt", "role": "CEO"}, {"id": "jesse", "name": "Jesse", "role": "CTO"}, {"id": "joey", "name": "Joey", "role": "CFO"}], "reports": [{"id": "inventory-outages", "title": "Inventory Outages", "owner": "jesse", "description": "FBA stock-outs by Master and listing, inbound, dispositions", "order": 1, "path": "../r/inventory-outages/", "updated": "2026-11-07T22:35:15Z"}], "generated": "2026-11-07T22:35:15Z"};
 const MEM = {};
 const store = {
-  get(k)    { try { return localStorage.getItem(k); } catch (e) { return MEM[k] ?? null; } },
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return MEM[k] ?? null; } },
   set(k, v) { try { localStorage.setItem(k, v); } catch (e) { MEM[k] = v; } },
-  del(k)    { try { localStorage.removeItem(k); } catch (e) { delete MEM[k]; } },
 };
-function ask(msg) { try { return prompt(msg); } catch (e) { return null; } }
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const partners = DATA.partners, reports = DATA.reports;
+const byOwner = id => reports.filter(r => r.owner === id).sort((a, b) => (a.order ?? 99) - (b.order ?? 99) || a.title.localeCompare(b.title));
+const state = { tab: null, rep: null };
 
-const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const nListings = DATA.groups.reduce((a,g)=>a+g.listings.length,0);
-const nFbj = DATA.fbj_groups.reduce((a,g)=>a+g.listings.length,0);
-
-document.getElementById('sub').textContent =
-  `FBA snapshot ${DATA.snapshot} · generated ${DATA.generated}` +
-  (DATA.inbound_snapshot ? ` · inbound data ${DATA.inbound_snapshot}` : ' · no inbound data') +
-  ` · history from ${DATA.first_snapshot} (${DATA.snapshots.length} snapshots)` +
-  (DATA.excluded_bundles ? ` · ${DATA.excluded_bundles} bundle masters excluded` : '') +
-  (DATA.excluded_phaseout_listings ? ` · ${DATA.excluded_phaseout_listings} PHASE-OUT listings excluded` : '');
-
-// ---------- dispositions (shared via GitHub contents API) ----------
-const DISP = { entries: [], sha: null, loaded: false, error: null };
-
-function b64encodeUtf8(str) {
-  const bytes = new TextEncoder().encode(str);
-  let bin = '';
-  for (const b of bytes) bin += String.fromCharCode(b);
-  return btoa(bin);
+function fmt(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return isNaN(d) ? '' : d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' }) + ' ET';
 }
-function b64decodeUtf8(b64) {
-  const bin = atob(b64.replace(/\n/g, ''));
-  const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
-  return new TextDecoder().decode(bytes);
+function parseHash() {
+  const [t, r] = decodeURIComponent(location.hash.slice(1)).split('/');
+  return { t, r };
 }
-
-async function loadDisp() {
-  try {
-    const r = await fetch(`${DISP_URL}?ref=main&_=${Date.now()}`,
-      { headers: { Accept: 'application/vnd.github+json' } });
-    if (r.status === 404) { DISP.entries = []; DISP.sha = null; DISP.loaded = true; return; }
-    if (!r.ok) throw new Error(`GitHub ${r.status}`);
-    const j = await r.json();
-    DISP.entries = JSON.parse(b64decodeUtf8(j.content));
-    DISP.sha = j.sha;
-    DISP.loaded = true;
-  } catch (e) {
-    DISP.error = e.message;
-    const b = document.getElementById('banner');
-    b.style.display = 'block';
-    b.textContent = `Dispositions could not be loaded (${e.message}) — outage data below is still current. Reload to retry.`;
+function init() {
+  const h = parseHash();
+  const saved = store.get('mk.reports.tab');
+  const pick = id => partners.find(p => p.id === id) && id;
+  state.tab = pick(h.t) || pick(saved) || (partners.find(p => byOwner(p.id).length) || partners[0]).id;
+  state.rep = h.r || null;
+  $('gen').textContent = DATA.generated ? 'Index updated ' + fmt(DATA.generated) : '';
+  render();
+}
+function render() {
+  $('tabs').innerHTML = partners.map(p =>
+    `<button class="tab" role="tab" aria-selected="${p.id === state.tab}" data-tab="${esc(p.id)}">${esc(p.name)}<span class="n">${byOwner(p.id).length}</span></button>`).join('');
+  const p = partners.find(x => x.id === state.tab);
+  const list = byOwner(state.tab);
+  if (!list.find(r => r.id === state.rep)) state.rep = list[0]?.id || null;
+  $('bar').innerHTML = (p.role ? `<span class="role">${esc(p.name)} · ${esc(p.role)}</span>` : '') +
+    list.map(r => `<button class="rep" aria-pressed="${r.id === state.rep}" data-rep="${esc(r.id)}" title="${esc(r.description)}">${esc(r.title)}</button>`).join('') +
+    '<span class="spacer"></span>' + (state.rep ? `<a class="pop" id="pop" target="_blank" rel="noopener">Open full page ↗</a>` : '');
+  const rep = list.find(r => r.id === state.rep);
+  const frame = $('frame'), empty = $('empty'), meta = $('meta');
+  if (rep) {
+    const src = new URL(rep.path, location.href).href;
+    if (frame.dataset.src !== src) { frame.src = src; frame.dataset.src = src; }
+    $('pop').href = src;
+    frame.hidden = false; empty.hidden = true; meta.hidden = false;
+    meta.textContent = [rep.description, rep.updated ? 'Updated ' + fmt(rep.updated) : ''].filter(Boolean).join(' — ');
+  } else {
+    frame.hidden = true; meta.hidden = true; empty.hidden = false;
+    delete frame.dataset.src; frame.removeAttribute('src');
+    empty.innerHTML = `<b>No reports yet for ${esc(p.name)}</b>Reports published to this hub with owner “${esc(p.id)}” appear here automatically.`;
   }
+  history.replaceState(null, '', '#' + state.tab + (state.rep ? '/' + state.rep : ''));
 }
-
-function getKey(forcePrompt) {
-  let k = store.get('msDashKey');
-  if (!k || forcePrompt) {
-    k = ask('Paste the dashboard editor key (ask Joey). Stored only in this browser.');
-    if (k) store.set('msDashKey', k.trim());
-  }
-  return (k || '').trim();
-}
-function resetKey() { store.del('msDashKey'); alert('Editor key cleared. You will be asked for it on the next save.'); }
-
-async function commitDisp(message, retrying) {
-  const key = getKey(false);
-  if (!key) throw new Error('no editor key entered');
-  const body = {
-    message,
-    branch: 'main',
-    content: b64encodeUtf8(JSON.stringify(DISP.entries, null, 1)),
-  };
-  if (DISP.sha) body.sha = DISP.sha;
-  const r = await fetch(DISP_URL, {
-    method: 'PUT',
-    headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${key}`,
-               'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (r.status === 401 || r.status === 403) {
-    store.del('msDashKey');
-    throw new Error('editor key rejected — it was cleared; try again and re-paste it');
-  }
-  if ((r.status === 409 || r.status === 422) && !retrying) {
-    // someone else saved first: merge their entries with ours by id, retry once
-    const mine = DISP.entries;
-    await loadDisp();
-    const ids = new Set(DISP.entries.map(e => e.id));
-    const merged = DISP.entries.concat(mine.filter(e => !ids.has(e.id)));
-    for (const e of mine) {           // propagate resolved flags set locally
-      const t = merged.find(x => x.id === e.id);
-      if (t && e.resolved) { t.resolved = true; t.resolvedAt = e.resolvedAt; }
-    }
-    DISP.entries = merged;
-    return commitDisp(message, true);
-  }
-  if (!r.ok) throw new Error(`GitHub save failed (${r.status})`);
-  const j = await r.json();
-  DISP.sha = j.content.sha;
-}
-
-function activeDispos(master) {
-  return DISP.entries.filter(e => !e.resolved && e.master === master);
-}
-function dispoOverdue(e) { return e.ecd && e.ecd < TODAY; }
-
-async function saveDispo(master, form) {
-  const err = form.querySelector('.err');
-  err.textContent = '';
-  const f = n => form.querySelector(`[name=${n}]`).value.trim();
-  if (!f('action')) { err.textContent = 'Pick an action.'; return; }
-  const who = f('who') || 'unknown';
-  store.set('msDashWho', who);
-  const entry = {
-    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-    master, sku: f('sku') || null,
-    date: TODAY, action: f('action'), qty: f('qty') || null,
-    ecd: f('ecd') || null, tracking: f('tracking') || null,
-    note: f('note') || null, who, resolved: false,
-  };
-  const btn = form.querySelector('button.save');
-  btn.disabled = true; btn.textContent = 'Saving…';
-  DISP.entries.push(entry);
-  try {
-    await commitDisp(`Disposition: ${master} — ${entry.action} (${who})`);
-    render(document.getElementById('q').value);
-  } catch (e) {
-    DISP.entries = DISP.entries.filter(x => x.id !== entry.id);
-    err.textContent = 'Save failed: ' + e.message;
-    btn.disabled = false; btn.textContent = 'Save';
-  }
-}
-
-async function resolveDispo(id) {
-  const e = DISP.entries.find(x => x.id === id);
-  if (!e) return;
-  e.resolved = true; e.resolvedAt = TODAY;
-  try {
-    await commitDisp(`Disposition resolved: ${e.master} (${e.who})`);
-    render(document.getElementById('q').value);
-  } catch (err) {
-    e.resolved = false; delete e.resolvedAt;
-    alert('Could not save: ' + err.message);
-  }
-}
-
-// ---------- rendering ----------
-function inboundChips(d) {
-  if (!d) return '';
-  const parts = [];
-  if (d.working) parts.push(`${d.working} awaiting shipment`);
-  if (d.shipped) parts.push(`${d.shipped} shipped to FBA`);
-  if (d.receiving) parts.push(`${d.receiving} receiving at FC`);
-  if (d.reserved) parts.push(`${d.reserved} reserved / FC transfer`);
-  return parts.map(p => `<span class="pill inb">${p}</span>`).join(' ');
-}
-
-function dispoHtml(e) {
-  const od = dispoOverdue(e);
-  const bits = [`<b>${esc(e.who)}</b> ${esc(e.date)}: ${esc(e.action)}`];
-  if (e.qty) bits.push(`&times;${esc(e.qty)}`);
-  if (e.sku) bits.push(`(${esc(e.sku)})`);
-  if (e.ecd) bits.push(`&middot; ECD ${esc(e.ecd)}${od ? ' <b>OVERDUE</b>' : ''}`);
-  if (e.tracking) bits.push(`&middot; ${esc(e.tracking)}`);
-  if (e.note) bits.push(`&mdash; ${esc(e.note)}`);
-  return `<span class="dispo${od ? ' overdue' : ''}">${bits.join(' ')}
-    <button onclick="resolveDispo('${esc(e.id)}')" title="Mark handled / arrived">done</button></span>`;
-}
-
-function dispoForm(master) {
-  const who = store.get('msDashWho') || '';
-  return `<div class="dform" id="df-${esc(master)}">
-    <label>Action
-      <select name="action">
-        <option value="">—</option>
-        <option>Shipped to FBA</option>
-        <option>Shipped to AWD</option>
-        <option>Vendor PO placed</option>
-        <option>Restock planned</option>
-        <option>Will not restock yet</option>
-        <option>Other (see note)</option>
-      </select></label>
-    <label>Qty <input name="qty" type="number" min="1" style="width:70px"></label>
-    <label>ECD <input name="ecd" type="date"></label>
-    <label>Tracking <input name="tracking" style="width:150px"></label>
-    <label>Specific SKU (optional) <input name="sku" style="width:140px" placeholder="whole master if blank"></label>
-    <label>Note <input name="note" class="wide"></label>
-    <label>Who <input name="who" style="width:80px" value="${esc(who)}"></label>
-    <button class="save" onclick="saveDispo('${esc(master)}', document.getElementById('df-${esc(master)}'))">Save</button>
-    <div class="err"></div>
-  </div>`;
-}
-
-function toggleForm(master) {
-  document.getElementById('df-' + master).classList.toggle('open');
-}
-
-function renderSection(groups, targetId, f, pillClass, pillWord, emptyMsg, withDispo) {
-  let shown = 0, shownL = 0, html = '';
-  for (const g of groups) {
-    const rows = f ? g.listings.filter(l =>
-      (g.master+' '+g.name+' '+l.sku+' '+l.title+' '+l.asin+' '+l.ff).toLowerCase().includes(f)
-    ) : g.listings;
-    if (!rows.length) continue;
-    shown++; shownL += rows.length;
-    const dispos = withDispo && DISP.loaded ? activeDispos(g.master) : [];
-    html += `<details class="master" ${f?'open':''}>
-      <summary>
-        <span class="chev">&#9654;</span>
-        <span class="msku">${esc(g.master)}</span>
-        <span class="mname">${esc(g.name)} ${g.family?`<span class="fam">· ${esc(g.family)}</span>`:''}</span>
-        <span class="chips">${inboundChips(g.inbound)}
-        <span class="pill count">${rows.length} listing${rows.length>1?'s':''}</span>
-        <span class="pill ${pillClass}">${pillWord} ${sinceLabel(esc(g.since), g.since_first_snap)}</span></span>
-      </summary>
-      ${dispos.length || withDispo ? `<div class="dispobar">
-        ${dispos.map(dispoHtml).join('')}
-        ${withDispo ? `<button class="addbtn" onclick="toggleForm('${esc(g.master)}')">+ record disposition</button>` : ''}
-      </div>` : ''}
-      ${withDispo ? dispoForm(g.master) : ''}
-      <table>
-        <tr><th>Marketplace SKU</th><th>Channel</th><th>Amazon Title</th><th>ASIN</th><th>Routed FF SKU</th><th>Inbound</th><th>Out since</th></tr>
-        ${rows.map(l=>`<tr>
-          <td class="sku">${esc(l.sku)}</td>
-          <td>${esc(l.marketplace)}</td>
-          <td class="title">${esc(l.title)}</td>
-          <td class="asin">${l.asin?`<a href="https://www.amazon.com/dp/${esc(l.asin)}" target="_blank">${esc(l.asin)}</a>`:''}</td>
-          <td class="ff">${esc(l.ff)}</td>
-          <td><span class="chips">${inboundChips(l.inbound) || '<span style="color:var(--muted)">—</span>'}</span></td>
-          <td class="since">${sinceLabel(esc(l.since), l.since_first_snap)}</td>
-        </tr>`).join('')}
-      </table>
-    </details>`;
-  }
-  document.getElementById(targetId).innerHTML = html ||
-    `<div class="none">${f ? 'No matches.' : emptyMsg}</div>`;
-  return [shown, shownL];
-}
-
-function sinceLabel(s, first) { return (first ? '&ge; ' : '') + s; }
-
-function groupInMotion(g) {
-  if (g.inbound && (g.inbound.working || g.inbound.shipped || g.inbound.receiving || g.inbound.reserved)) return true;
-  return DISP.loaded && activeDispos(g.master).length > 0;
-}
-
-function renderStats(naCount, imCount) {
-  const t = DATA.trend, max = Math.max(...t.map(x=>x[1]),1);
-  const pts = t.map((x,i)=>`${(i/(t.length-1))*100},${46-(x[1]/max)*40}`).join(' ');
-  const nRecovered = DATA.changes.filter(c=>c.direction==='recovered').length;
-  const nWentOut = DATA.changes.filter(c=>c.direction==='went_out').length;
-  document.getElementById('stats').innerHTML = `
-    <div class="stat"><div class="n bad">${naCount}</div><div class="l">Masters needing action</div></div>
-    <div class="stat"><div class="n" style="color:var(--blue)">${imCount}</div><div class="l">Masters in motion</div></div>
-    <div class="stat"><div class="n bad">${nListings}</div><div class="l">Listings affected (of ${DATA.active_listings} active)</div></div>
-    <div class="stat"><div class="n" style="color:var(--amber)">${nFbj}</div><div class="l">Fulfilled by Joey</div></div>
-    <div class="stat"><div class="n" style="color:var(--green)">${nRecovered}</div><div class="l">Recovered, last ${DATA.change_window_days}d</div></div>
-    <div class="stat"><div class="n bad">${nWentOut}</div><div class="l">Newly out, last ${DATA.change_window_days}d</div></div>
-    <div class="trend"><div class="l" style="color:var(--muted);font-size:12px">FBA listings out — last ${t.length} snapshots (${t[0][1]} &rarr; ${t[t.length-1][1]})</div>
-      <svg viewBox="0 0 100 48" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="#b91c1c" stroke-width="1.6"/></svg></div>`;
-}
-
-function renderChanges() {
-  const el = document.getElementById('changes');
-  document.getElementById('changeswindow').textContent = ` (last ${DATA.change_window_days} days)`;
-  if (!DATA.changes.length) {
-    el.innerHTML = `<div class="none">No stock-status changes in the last ${DATA.change_window_days} days.</div>`;
-    return;
-  }
-  let html = `<table>
-    <tr><th>Date</th><th>Status</th><th>Marketplace SKU</th><th>Master</th><th>Product / Title</th><th>ASIN</th></tr>`;
-  for (const c of DATA.changes) {
-    html += `<tr>
-      <td class="date">${esc(c.date)}</td>
-      <td><span class="pill ${c.direction==='recovered'?'ok':'out'}">${c.direction==='recovered'?'Back in stock':'Went out'}</span></td>
-      <td class="sku">${esc(c.sku)}</td>
-      <td class="sku">${esc(c.master)}</td>
-      <td class="title">${esc(c.title || c.name)}</td>
-      <td class="asin">${c.asin?`<a href="https://www.amazon.com/dp/${esc(c.asin)}" target="_blank">${esc(c.asin)}</a>`:''}</td>
-    </tr>`;
-  }
-  el.innerHTML = html + '</table>';
-}
-
-function render(filter) {
-  const f = (filter||'').toLowerCase();
-  const na = DATA.groups.filter(g => !groupInMotion(g));
-  const im = DATA.groups.filter(g => groupInMotion(g));
-  renderStats(na.length, im.length);
-  const [s1, l1] = renderSection(na, 'na', f, 'out', 'out',
-    'Nothing needs action — every outage has inbound inventory or a recorded disposition.', true);
-  const [s2, l2] = renderSection(im, 'im', f, 'out', 'out',
-    'Nothing in motion.', true);
-  const [s3, l3] = renderSection(DATA.fbj_groups, 'fbjlist', f, 'fbj', 'no FBA',
-    'None — every active listing has some FBA presence.', false);
-  document.getElementById('matchinfo').textContent =
-    f ? `${s1+s2+s3} masters / ${l1+l2+l3} listings match` : '';
-}
-function setAll(open) { document.querySelectorAll('details.master').forEach(d=>d.open=open); }
-document.getElementById('q').addEventListener('input', e => render(e.target.value));
-
-renderChanges();
-render('');
-loadDisp().then(() => render(document.getElementById('q').value));
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-tab]'), r = e.target.closest('[data-rep]');
+  if (t) { state.tab = t.dataset.tab; state.rep = null; store.set('mk.reports.tab', state.tab); render(); }
+  else if (r) { state.rep = r.dataset.rep; render(); }
+});
+init();
 </script>
 </body>
 </html>
