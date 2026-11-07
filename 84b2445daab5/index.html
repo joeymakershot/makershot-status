@@ -47,7 +47,7 @@
   <div class="empty" id="empty" hidden></div>
 </main>
 <script>
-const DATA = {"partners": [{"id": "matt", "name": "Matt", "role": "CEO"}, {"id": "jesse", "name": "Jesse", "role": "CTO"}, {"id": "joey", "name": "Joey", "role": "CFO"}], "reports": [{"id": "inventory-outages", "title": "Inventory Outages", "owner": "jesse", "description": "FBA stock-outs by Master and listing, inbound, dispositions", "order": 1, "path": "../r/inventory-outages/", "updated": "2026-11-07T22:35:15Z"}], "generated": "2026-11-07T22:35:15Z"};
+const DATA = {"partners": [{"id": "matt", "name": "Matt", "role": "CEO"}, {"id": "jesse", "name": "Jesse", "role": "CTO"}, {"id": "joey", "name": "Joey", "role": "CFO"}], "reports": [{"id": "inventory-outages", "title": "Inventory Outages", "owner": "jesse", "description": "FBA stock-outs by Master and listing, inbound, dispositions", "order": 1, "path": "../r/inventory-outages/", "updated": "2026-11-07T22:35:15Z"}, {"id": "fba-removals", "title": "FBA Removals", "owner": "jesse", "description": "Removal orders, shipments and delivery tracking", "order": 2, "path": "../d1b248f47e23/", "updated": "2026-11-07T22:35:17Z"}], "generated": "2026-11-07T22:35:17Z"};
 const MEM = {};
 const store = {
   get(k) { try { return localStorage.getItem(k); } catch (e) { return MEM[k] ?? null; } },
