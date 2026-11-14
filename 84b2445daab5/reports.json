@@ -24,7 +24,7 @@
    "description": "FBA stock-outs by Master and listing, inbound, dispositions",
    "order": 1,
    "path": "../r/inventory-outages/",
-   "updated": "2026-11-13T15:18:26Z"
+   "updated": "2026-11-14T03:09:19Z"
   },
   {
    "id": "fba-removals",
@@ -36,5 +36,5 @@
    "updated": "2026-11-13T15:50:10Z"
   }
  ],
- "generated": "2026-11-13T15:50:10Z"
+ "generated": "2026-11-14T03:09:19Z"
 }
